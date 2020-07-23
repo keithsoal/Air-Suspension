@@ -2,9 +2,9 @@
 #include <stdio.h>
 
 // Cylinder Middle Position ----------------------------------------
-const long offSet = 172;  // range 11 - 354 mV
-const long offSetRange = 60;
-const long relativeABCdist = 20;
+const long offSet = 115;  //  200
+const long offSetRange = 25; //50
+const long relativeABCdist = 15;
 
 // Lights & Buttons ------------------------------------------------
 const int GreenLight   = CONTROLLINO_R13;
@@ -17,7 +17,7 @@ bool RedFlag = false;
 unsigned long previousMillis = 0;
 const long interval = 1000; // interval at which to blink
 unsigned long serialPreviousMillis = 0;
-const long serialInterval = 150; // interval at which to write serial
+const long serialInterval = 300; // interval at which to write serial
 
 // Station A -------------------------------------------------------
 const int VentilA_SchnellEin = CONTROLLINO_R0;
@@ -25,7 +25,6 @@ const int VentilA_SchnellAus = CONTROLLINO_R1;
 const int VentilA_Heben = CONTROLLINO_R2;
 const int VentilA_Senken = CONTROLLINO_R3;
 
-const int BottomSwitchA     = CONTROLLINO_A0;
 int TravelSensorA           = CONTROLLINO_A1;
 int lnDSPA = 0;
 
@@ -35,7 +34,6 @@ const int VentilB_SchnellAus = CONTROLLINO_R5;
 const int VentilB_Heben = CONTROLLINO_R6;
 const int VentilB_Senken = CONTROLLINO_R7;
 
-const int BottomSwitchB     = CONTROLLINO_A2;
 int TravelSensorB           = CONTROLLINO_A3;
 int lnDSPB = 0;
 
@@ -45,7 +43,6 @@ const int VentilC_SchnellAus = CONTROLLINO_R9;
 const int VentilC_Heben = CONTROLLINO_R10;
 const int VentilC_Senken = CONTROLLINO_R11;
 
-const int BottomSwitchC     = CONTROLLINO_A4;
 int TravelSensorC           = CONTROLLINO_A5;
 int lnDSPC = 0;
 
@@ -54,6 +51,11 @@ int state = 0;
 bool senkenFlagA = false;
 bool senkenFlagB = false;
 bool senkenFlagC = false;
+
+// initial poti voltage
+const long stationA = 25;
+const long stationB = 5;
+const long stationC = 5;
 // ----------------------------------------------------------------
 
 void setup() {
@@ -68,21 +70,18 @@ void setup() {
   pinMode(VentilA_SchnellAus, OUTPUT);
   pinMode(VentilA_Heben, OUTPUT);
   pinMode(VentilA_Senken, OUTPUT);
-  pinMode(BottomSwitchA, INPUT);
   pinMode(TravelSensorA, INPUT);
   // Station B -----------------------
   pinMode(VentilB_SchnellEin, OUTPUT);
   pinMode(VentilB_SchnellAus, OUTPUT);
   pinMode(VentilB_Heben, OUTPUT);
   pinMode(VentilB_Senken, OUTPUT);
-  pinMode(BottomSwitchB, INPUT);
   pinMode(TravelSensorB, INPUT);
   // Station C -----------------------
   pinMode(VentilC_SchnellEin, OUTPUT);
   pinMode(VentilC_SchnellAus, OUTPUT);
   pinMode(VentilC_Heben, OUTPUT);
   pinMode(VentilC_Senken, OUTPUT);
-  pinMode(BottomSwitchC, INPUT);
   pinMode(TravelSensorC, INPUT);
 }
 
@@ -158,22 +157,22 @@ void loop() {
 
   // STATE 2 ----------------------------------------------------------
   // if bottom switch opens, stop filling and wait
-  if (state == 1 && digitalRead(BottomSwitchA) == LOW) {
+  if (state == 1 && analogRead(TravelSensorA) > stationA || state == 2 && analogRead(TravelSensorA) > stationA) {
     // Cylinder A
     digitalWrite(VentilA_SchnellEin, LOW);
   }
     // cylinder B
-    if (state == 1 && digitalRead(BottomSwitchB) == LOW) {
+    if (state == 1 && analogRead(TravelSensorB) > stationB || state == 2 && analogRead(TravelSensorB) > stationB) {
     // Cylinder B
     digitalWrite(VentilB_SchnellEin, LOW);
   }
     // cylinder C
-    if (state == 1 && digitalRead(BottomSwitchC) == LOW) {
+    if (state == 1 && analogRead(TravelSensorC) > stationC || state == 2 && analogRead(TravelSensorC) > stationC) {
     // Cylinder C
     digitalWrite(VentilC_SchnellEin, LOW);
   }
 
-  if(state == 1 && digitalRead(BottomSwitchA) == LOW && digitalRead(BottomSwitchB) == LOW && digitalRead(BottomSwitchC) == LOW){
+  if(state == 1 && analogRead(TravelSensorA) > stationA && analogRead(TravelSensorB) > stationB && analogRead(TravelSensorC) > stationC){
     // Lights
     digitalWrite(GreenLight, HIGH);
     GreenFlag = true;
@@ -420,20 +419,20 @@ void loop() {
   }
 
     // cylinder A
-  if (state == 6 && digitalRead(BottomSwitchA) == HIGH) {
+  if (state == 6 && analogRead(TravelSensorA) == stationA) {
     digitalWrite(VentilA_Senken, LOW);
   }
     // cylinder B
-  if (state == 6 && digitalRead(BottomSwitchB) == HIGH) {
+  if (state == 6 && analogRead(TravelSensorB) == stationB) {
     digitalWrite(VentilB_Senken, LOW);;
   }
     // cylinder C
-  if (state == 6 && digitalRead(BottomSwitchC) == HIGH) {
+  if (state == 6 && analogRead(TravelSensorC) == stationC) {
     digitalWrite(VentilC_Senken, LOW);
   }
 
   // check all three are down
-  if(state == 6 && digitalRead(BottomSwitchA) == HIGH && digitalRead(BottomSwitchB) == HIGH && digitalRead(BottomSwitchC) == HIGH){
+  if(state == 6 && analogRead(TravelSensorA) <= stationA && analogRead(TravelSensorB) <= stationB && analogRead(TravelSensorC) <= stationC){
     state = 0;
   }
 
