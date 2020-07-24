@@ -95,7 +95,6 @@ void loop() {
     RedFlag = true;
   }
 
-
   // STATE 1 ----------------------------------------------------------
   // start filling cylinders
   if (state == 0 && digitalRead(GreenButton) == HIGH) {
@@ -138,7 +137,7 @@ void loop() {
   }
 
   // check and return to state 1 if cylinder becomes empty
-  if (state == 2 && analogRead(TravelSensorA) < stationA - offSetRange || state == 2 && analogRead(TravelSensorB) < stationB - offSetRange || state == 2 && analogRead(TravelSensorC) < stationC - offSetRange){
+  if (state == 2 && analogRead(TravelSensorA) < stationA - offSetRange || state == 2 && analogRead(TravelSensorB) < stationB - offSetRange || state == 2 && analogRead(TravelSensorC) < stationC - offSetRange) {
     digitalWrite(GreenLight, LOW);
     GreenFlag = false;
     state = 1;
@@ -178,7 +177,7 @@ void loop() {
     if (currentMillis - previousMillis >= interval) {
       // save the last time you blinked the LED
       previousMillis = currentMillis;
-    RedFlag, GreenFlag = blinking_green_red_light(RedFlag);
+      RedFlag, GreenFlag = blinking_green_red_light(RedFlag);
     }
   }
 
@@ -211,7 +210,6 @@ void loop() {
     if (lnDSPC < offSet - offSetRange) {
       state = 3;
     }
-
 
     if (lnDSPA > offSet + offSetRange) {
       digitalWrite(VentilA_Senken, HIGH);
@@ -251,7 +249,6 @@ void loop() {
       senkenFlagC = false;
     }
   }
-
 
   // STATE 5 ----------------------------------------------------------
   // future place holder
@@ -312,7 +309,6 @@ void loop() {
     state = 0;
   }
 
-
   // STATE 7 ----------------------------------------------------------
   // Schnellaus
 
@@ -331,7 +327,7 @@ void loop() {
     if (currentMillis - previousMillis >= interval) {
       // save the last time you blinked the LED
       previousMillis = currentMillis;
-     RedFlag = blinking_red_light(RedFlag);
+      RedFlag = blinking_red_light(RedFlag);
     }
   }
 
@@ -340,7 +336,6 @@ void loop() {
     state = 0;
     delay(500);
   }
-
 
   // OTHER ----------------------------------------------------------
   // Serial print
@@ -362,11 +357,7 @@ void loop() {
     Serial.println(lnDSPC);
     Serial.println(state);
   }
-
-
 }
-
-
 
 //FUNCTIONS-------------------------------------------------------
 
@@ -438,7 +429,7 @@ void ventil_heben() {
   digitalWrite(RedLight, HIGH);
 }
 
-void ventil_senken(){
+void ventil_senken() {
   digitalWrite(VentilA_Senken, HIGH);
   digitalWrite(VentilB_Senken, HIGH);
   digitalWrite(VentilC_Senken, HIGH);
@@ -453,7 +444,7 @@ void ventil_senken(){
   digitalWrite(VentilC_SchnellAus, LOW);
 }
 
-void ventil_schnell_aus(){
+void ventil_schnell_aus() {
   digitalWrite(VentilA_SchnellAus, HIGH);
   digitalWrite(VentilB_SchnellAus, HIGH);
   digitalWrite(VentilC_SchnellAus, HIGH);
@@ -511,8 +502,6 @@ void close_valves() {
   digitalWrite(VentilC_Senken, LOW);
 }
 
-
-
 bool blinking_green_light(bool GreenFlag) {
   // if the LED is off turn it on and vice-versa:
   if (GreenFlag == false) {
@@ -526,32 +515,32 @@ bool blinking_green_light(bool GreenFlag) {
   return GreenFlag;
 }
 
-bool blinking_green_red_light(bool RedFlag){
-        // if the LED is off turn it on and vice-versa:
-      if (RedFlag == false) {
-        digitalWrite(RedLight, HIGH);
-        digitalWrite(GreenLight, HIGH);
-        RedFlag = true;
-        GreenFlag = true;
-      }
-      else {
-        digitalWrite(RedLight, LOW);
-        digitalWrite(GreenLight, LOW);
-        RedFlag = false;
-        GreenFlag = false;
-      }
-      return RedFlag, GreenFlag;
+bool blinking_green_red_light(bool RedFlag) {
+  // if the LED is off turn it on and vice-versa:
+  if (RedFlag == false) {
+    digitalWrite(RedLight, HIGH);
+    digitalWrite(GreenLight, HIGH);
+    RedFlag = true;
+    GreenFlag = true;
+  }
+  else {
+    digitalWrite(RedLight, LOW);
+    digitalWrite(GreenLight, LOW);
+    RedFlag = false;
+    GreenFlag = false;
+  }
+  return RedFlag, GreenFlag;
 }
 
-bool blinking_red_light(bool RedFlag){
-        // if the LED is off turn it on and vice-versa:
-      if (RedFlag == false) {
-        digitalWrite(RedLight, HIGH);
-        RedFlag = true;
-      }
-      else {
-        digitalWrite(RedLight, LOW);
-        RedFlag = false;
-      }
-      return RedFlag;
+bool blinking_red_light(bool RedFlag) {
+  // if the LED is off turn it on and vice-versa:
+  if (RedFlag == false) {
+    digitalWrite(RedLight, HIGH);
+    RedFlag = true;
+  }
+  else {
+    digitalWrite(RedLight, LOW);
+    RedFlag = false;
+  }
+  return RedFlag;
 }
