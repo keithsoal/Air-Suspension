@@ -100,9 +100,12 @@ void loop() {
   // start filling cylinders
   if (state == 0 && digitalRead(GreenButton) == HIGH) {
     start_filling_cyclinders();
-    state  = 1;
+    // Lights
+    digitalWrite(GreenLight, HIGH);
+    digitalWrite(RedLight, HIGH);
     GreenFlag = true;
     RedFlag = true;
+    state  = 1;
   }
 
   // Blinking Green Light
@@ -117,7 +120,9 @@ void loop() {
 
   // stop filling cylinders
   if (state == 1 && digitalRead(RedButton) == HIGH) {
-    stop_filling_cylinders();
+    close_valves();
+    digitalWrite(GreenLight, LOW);
+    digitalWrite(RedLight, HIGH);
     GreenFlag = false;
     RedFlag = true;
     state = 0;
@@ -130,7 +135,7 @@ void loop() {
   }
 
   // stop filling and wait
-  if (state == 1 && analogRead(TravelSensorA) > stationA && analogRead(TravelSensorB) > stationB && analogRead(TravelSensorC) > stationC) {
+  if (state == 1 && analogRead(TravelSensorA) >= stationA && analogRead(TravelSensorB) >= stationB && analogRead(TravelSensorC) >= stationC) {
     close_valves();
     // Lights
     digitalWrite(GreenLight, HIGH);
@@ -193,7 +198,7 @@ void loop() {
     digitalWrite(RedLight, HIGH);
     GreenFlag = false;
     RedFlag = true;
-    state = 2;
+    state = 6;
     delay(500);
   }
 
@@ -280,6 +285,11 @@ void loop() {
     delay(500);
   }
 
+  if (state = 6){
+  // check that level relative to other displacement sensors does not exceed threshold
+  cylinder_relative_descend(offSet, relativeABCdist);
+  }
+
   // Blinking Red Light
   if (state == 6) {
     unsigned long currentMillis = millis();
@@ -296,16 +306,13 @@ void loop() {
     delay(500);
   }
 
-  // cylinder A
-  if (state == 6 && analogRead(TravelSensorA) == stationA) {
+  if (state == 6 && analogRead(TravelSensorA) <= stationA) {
     digitalWrite(VentilA_Senken, LOW);
   }
-  // cylinder B
-  if (state == 6 && analogRead(TravelSensorB) == stationB) {
+  if (state == 6 && analogRead(TravelSensorB) <= stationB) {
     digitalWrite(VentilB_Senken, LOW);;
   }
-  // cylinder C
-  if (state == 6 && analogRead(TravelSensorC) == stationC) {
+  if (state == 6 && analogRead(TravelSensorC) <= stationC) {
     digitalWrite(VentilC_Senken, LOW);
   }
   // check all three are down
@@ -342,13 +349,16 @@ void loop() {
     delay(500);
   }
 
-    if (digitalRead(GreenButton) == HIGH && digitalRead(RedButton) == HIGH) {
+  if (digitalRead(GreenButton) == HIGH && digitalRead(RedButton) == HIGH) {
     close_valves();
     digitalWrite(RedLight, HIGH);
     RedFlag = true;
     state = 0;
     delay(1000);
   }
+
+  // NO PRESSURE STATE ----------------------------------------------
+  // if state 3 but all displacements keep falling then there is no air pressure
 
   // OTHER ----------------------------------------------------------
   // Serial print
@@ -376,25 +386,18 @@ void loop() {
 
 void start_filling_cyclinders() {
   // start filling cyclinders
-  digitalWrite(VentilA_SchnellAus, LOW);
   digitalWrite(VentilA_SchnellEin, HIGH);
-  digitalWrite(VentilB_SchnellAus, LOW);
   digitalWrite(VentilB_SchnellEin, HIGH);
-  digitalWrite(VentilC_SchnellAus, LOW);
   digitalWrite(VentilC_SchnellEin, HIGH);
-  // Lights
-  digitalWrite(GreenLight, HIGH);
-  digitalWrite(RedLight, HIGH);
-  delay(500);
-}
-
-void stop_filling_cylinders() {
-  digitalWrite(VentilA_SchnellEin, LOW);
-  digitalWrite(VentilB_SchnellEin, LOW);
-  digitalWrite(VentilC_SchnellEin, LOW);
-  // Lights
-  digitalWrite(GreenLight, LOW);
-  digitalWrite(RedLight, HIGH);
+  digitalWrite(VentilA_SchnellAus, LOW);
+  digitalWrite(VentilB_SchnellAus, LOW);
+  digitalWrite(VentilC_SchnellAus, LOW);
+  digitalWrite(VentilA_Heben, LOW);
+  digitalWrite(VentilB_Heben, LOW);
+  digitalWrite(VentilC_Heben, LOW);
+  digitalWrite(VentilA_Senken, LOW);
+  digitalWrite(VentilB_Senken, LOW);
+  digitalWrite(VentilC_Senken, LOW);
   delay(500);
 }
 
@@ -472,25 +475,53 @@ void cylinder_relative_rise(int offSet, int relativeABCdist) {
   lnDSPB = analogRead(TravelSensorB);
   lnDSPC = analogRead(TravelSensorC);
   // cylinder A
-  if (lnDSPA < offSet && lnDSPA <= (lnDSPB + relativeABCdist) && lnDSPA <= (lnDSPC + relativeABCdist)) {
+  if (lnDSPA < offSet && lnDSPA <= (lnDSPB + relativeABCdist) || lnDSPA < offSet && lnDSPA <= (lnDSPC + relativeABCdist)) {
     digitalWrite(VentilA_Heben, HIGH);
   }
   else {
     digitalWrite(VentilA_Heben, LOW);
   }
   // cylinder B
-  if (lnDSPB < offSet && lnDSPB <= (lnDSPC + relativeABCdist) && lnDSPB <= (lnDSPA + relativeABCdist)) {
+  if (lnDSPB < offSet && lnDSPB <= (lnDSPC + relativeABCdist) || lnDSPB < offSet && lnDSPB <= (lnDSPA + relativeABCdist)) {
     digitalWrite(VentilB_Heben, HIGH);
   }
   else {
     digitalWrite(VentilB_Heben, LOW);
   }
   // cylinder C
-  if (lnDSPC < offSet && lnDSPC <= (lnDSPA + relativeABCdist) && lnDSPC <= (lnDSPB + relativeABCdist)) {
+  if (lnDSPC < offSet && lnDSPC <= (lnDSPA + relativeABCdist) || lnDSPC < offSet && lnDSPC <= (lnDSPB + relativeABCdist)) {
     digitalWrite(VentilC_Heben, HIGH);
   }
   else {
     digitalWrite(VentilC_Heben, LOW);
+  }
+}
+
+void cylinder_relative_descend(int offSet, int relativeABCdist) {
+  // check that level relative to other displacement sensors does not exceed threshold
+  lnDSPA = analogRead(TravelSensorA);
+  lnDSPB = analogRead(TravelSensorB);
+  lnDSPC = analogRead(TravelSensorC);
+  // cylinder A
+  if (lnDSPA > stationA && lnDSPA <= (lnDSPB - relativeABCdist) || lnDSPA > stationA && lnDSPA <= (lnDSPC - relativeABCdist)) {
+    digitalWrite(VentilA_Senken, LOW);
+  }
+  else {
+    digitalWrite(VentilA_Senken, HIGH);
+  }
+  // cylinder B
+  if (lnDSPB > stationB && lnDSPB <= (lnDSPC - relativeABCdist) || lnDSPB > stationB && lnDSPB <= (lnDSPA - relativeABCdist)) {
+    digitalWrite(VentilB_Senken, LOW);
+  }
+  else {
+    digitalWrite(VentilB_Senken, HIGH);
+  }
+  // cylinder C
+  if (lnDSPC > stationC && lnDSPC <= (lnDSPA - relativeABCdist) || lnDSPC > stationC && lnDSPC <= (lnDSPB - relativeABCdist)) {
+    digitalWrite(VentilC_Senken, LOW);
+  }
+  else {
+    digitalWrite(VentilC_Senken, HIGH);
   }
 }
 
