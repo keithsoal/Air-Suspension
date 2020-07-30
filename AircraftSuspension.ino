@@ -3,17 +3,19 @@
 
 // Cylinder Middle Position ----------------------------------------
 const long offSet = 115;  //  200
-const long offSetRange = 25; //50
+const long offSetRange = 15; //50
 const long relativeABCdist = 15;
 const long staticRange = 4;
 
 // Lights & Buttons ------------------------------------------------
 const int GreenLight   = CONTROLLINO_R13;
 const int RedLight   = CONTROLLINO_R12;
+const int OrangeLight   = CONTROLLINO_R14;
 const int GreenButton  = CONTROLLINO_A14;
 const int RedButton  = CONTROLLINO_A15;
 bool GreenFlag = false;
 bool RedFlag = false;
+bool OrangeFlag = false;
 
 unsigned long previousMillis = 0;
 const long interval = 1000; // interval at which to blink
@@ -66,6 +68,7 @@ void setup() {
   pinMode(RedButton, INPUT);
   pinMode(GreenLight, OUTPUT);
   pinMode(RedLight, OUTPUT);
+  pinMode(OrangeLight, OUTPUT);
   // Station A -----------------------
   pinMode(VentilA_SchnellEin, OUTPUT);
   pinMode(VentilA_SchnellAus, OUTPUT);
@@ -285,10 +288,10 @@ void loop() {
     delay(500);
   }
 
-  if (state = 6){
-  // check that level relative to other displacement sensors does not exceed threshold
-  cylinder_relative_descend(offSet, relativeABCdist);
-  }
+    if (state == 6){
+    // check that level relative to other displacement sensors does not exceed threshold
+    cylinder_relative_descend(stationA, stationB, stationC, relativeABCdist);
+    }
 
   // Blinking Red Light
   if (state == 6) {
@@ -306,13 +309,13 @@ void loop() {
     delay(500);
   }
 
-  if (state == 6 && analogRead(TravelSensorA) <= stationA) {
+  if (state == 6 && analogRead(TravelSensorA) < stationA) {
     digitalWrite(VentilA_Senken, LOW);
   }
-  if (state == 6 && analogRead(TravelSensorB) <= stationB) {
+  if (state == 6 && analogRead(TravelSensorB) < stationB) {
     digitalWrite(VentilB_Senken, LOW);;
   }
-  if (state == 6 && analogRead(TravelSensorC) <= stationC) {
+  if (state == 6 && analogRead(TravelSensorC) < stationC) {
     digitalWrite(VentilC_Senken, LOW);
   }
   // check all three are down
@@ -380,9 +383,20 @@ void loop() {
     Serial.println(lnDSPC);
     Serial.println(state);
   }
+
+    // Blinking Orange Light
+  if (state == 0 || state == 1 || state == 2 ||  state == 3 ||  state == 4 ||  state == 6 ||  state == 7) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      // save the last time you blinked the LED
+      previousMillis = currentMillis;
+      OrangeFlag = blinking_orange_light(OrangeFlag);
+    }
+  }
+
+
 }
 
-//FUNCTIONS-------------------------------------------------------
 
 void start_filling_cyclinders() {
   // start filling cyclinders
@@ -399,6 +413,22 @@ void start_filling_cyclinders() {
   digitalWrite(VentilB_Senken, LOW);
   digitalWrite(VentilC_Senken, LOW);
   delay(500);
+}
+
+
+void close_valves() {
+  digitalWrite(VentilA_SchnellEin, LOW);
+  digitalWrite(VentilB_SchnellEin, LOW);
+  digitalWrite(VentilC_SchnellEin, LOW);
+  digitalWrite(VentilA_Heben, LOW);
+  digitalWrite(VentilB_Heben, LOW);
+  digitalWrite(VentilC_Heben, LOW);
+  digitalWrite(VentilA_SchnellAus, LOW);
+  digitalWrite(VentilB_SchnellAus, LOW);
+  digitalWrite(VentilC_SchnellAus, LOW);
+  digitalWrite(VentilA_Senken, LOW);
+  digitalWrite(VentilB_Senken, LOW);
+  digitalWrite(VentilC_Senken, LOW);
 }
 
 void check_initial_displacement() {
@@ -497,7 +527,7 @@ void cylinder_relative_rise(int offSet, int relativeABCdist) {
   }
 }
 
-void cylinder_relative_descend(int offSet, int relativeABCdist) {
+void cylinder_relative_descend(int stationA, int stationB, int stationC, int relativeABCdist) {
   // check that level relative to other displacement sensors does not exceed threshold
   lnDSPA = analogRead(TravelSensorA);
   lnDSPB = analogRead(TravelSensorB);
@@ -525,21 +555,6 @@ void cylinder_relative_descend(int offSet, int relativeABCdist) {
   }
 }
 
-void close_valves() {
-  digitalWrite(VentilA_SchnellEin, LOW);
-  digitalWrite(VentilB_SchnellEin, LOW);
-  digitalWrite(VentilC_SchnellEin, LOW);
-  digitalWrite(VentilA_Heben, LOW);
-  digitalWrite(VentilB_Heben, LOW);
-  digitalWrite(VentilC_Heben, LOW);
-  digitalWrite(VentilA_SchnellAus, LOW);
-  digitalWrite(VentilB_SchnellAus, LOW);
-  digitalWrite(VentilC_SchnellAus, LOW);
-  digitalWrite(VentilA_Senken, LOW);
-  digitalWrite(VentilB_Senken, LOW);
-  digitalWrite(VentilC_Senken, LOW);
-}
-
 bool blinking_green_light(bool GreenFlag) {
   // if the LED is off turn it on and vice-versa:
   if (GreenFlag == false) {
@@ -553,7 +568,6 @@ bool blinking_green_light(bool GreenFlag) {
   return GreenFlag;
 }
 
-
 bool blinking_red_light(bool RedFlag) {
   // if the LED is off turn it on and vice-versa:
   if (RedFlag == false) {
@@ -565,4 +579,17 @@ bool blinking_red_light(bool RedFlag) {
     RedFlag = false;
   }
   return RedFlag;
+}
+
+bool blinking_orange_light(bool OrangeFlag) {
+  // if the LED is off turn it on and vice-versa:
+  if (OrangeFlag == false) {
+    digitalWrite(OrangeLight, HIGH);
+    OrangeFlag = true;
+  }
+  else {
+    digitalWrite(OrangeLight, LOW);
+    OrangeFlag = false;
+  }
+  return OrangeFlag;
 }
