@@ -17,6 +17,7 @@ bool RedFlag = false;
 bool OrangeFlag = false;
 
 unsigned long previousMillis = 0;
+unsigned long previousMillisThreshold = 0;
 const long interval = 1000; // interval at which to blink
 unsigned long serialPreviousMillis = 0;
 const long serialInterval = 300; // interval at which to write serial
@@ -54,6 +55,11 @@ int state = 0;
 bool senkenFlagA = false;
 bool senkenFlagB = false;
 bool senkenFlagC = false;
+
+// Pressure vessels state
+bool TankA = false;
+bool TankB = false;
+bool TankC = false;
 
 // poti TARE
 int TareA = 0;
@@ -149,11 +155,13 @@ void loop() {
   // STATE 2 ----------------------------------------------------------
   // if initial displacement is achieved, stop filling and wait
   if (state == 1) {
-    check_initial_displacement();
+    TankA =  check_initial_displacementA(TareA, LiftOff);
+    TankB =  check_initial_displacementB(TareB, LiftOff);
+    TankC =  check_initial_displacementC(TareC, LiftOff);
   }
 
   // stop filling and wait
-  if (state == 1 && analogReadA(TareA) >= LiftOff && analogReadB(TareB) >= LiftOff && analogReadC(TareC) >= LiftOff) {
+  if (state == 1 && TankA == true && TankB == true && TankC == true) {
     close_valves();
     // Lights
     digitalWrite(GreenLight, HIGH);
@@ -177,12 +185,17 @@ void loop() {
   // push up step wise to level
   if (state == 3) {
 
-    // check that level relative to other displacement sensors does not exceed threshold
-    cylinder_relative_rise(middlePosition, relativeABCdist);
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillisThreshold >= 2*interval) {
+      // save the last time you blinked the LED
+      previousMillisThreshold = currentMillis;
+      // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
+      cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
+    }
 
 
     // if system reached middle position close valves
-    if (lnDSPB >= middlePosition && lnDSPB >= middlePosition && lnDSPC >= middlePosition) {
+    if (lnDSPB >= middlePosition-staticRange && lnDSPB >= middlePosition-staticRange && lnDSPC >= middlePosition-staticRange) {
       state = 4;
       close_valves();
       digitalWrite(GreenLight, HIGH);
@@ -299,7 +312,7 @@ void loop() {
 
   if (state == 6) {
     // check that level relative to other displacement sensors does not exceed threshold
-    cylinder_relative_descend(LiftOff, relativeABCdist);
+    cylinder_relative_descend(TareA, TareB, TareC, LiftOff, relativeABCdist);
   }
 
   // Blinking Red Light
@@ -556,28 +569,29 @@ void ventil_schnell_aus() {
 
   // Poti checks ------------------------------------------------------
   
-void check_initial_displacement() {
+bool check_initial_displacementA(int TareA, int LiftOff) {
   if (analogReadA(TareA) > LiftOff) {
     digitalWrite(VentilA_SchnellEin, LOW);
+    TankA = true;
   }
-  if (analogReadA(TareA) < LiftOff) {
-    digitalWrite(VentilA_SchnellEin, HIGH);
-  }
+  return TankA;
+}
+bool check_initial_displacementB(int TareB, int LiftOff) {
   if (analogReadB(TareB) > LiftOff) {
     digitalWrite(VentilB_SchnellEin, LOW);
+    TankB = true;
   }
-  if (analogReadB(TareB) < LiftOff) {
-    digitalWrite(VentilB_SchnellEin, HIGH);
-  }
+  return TankA;
+}
+bool check_initial_displacementC(int TareC, int LiftOff) {
   if (analogReadC(TareC) > LiftOff) {
     digitalWrite(VentilC_SchnellEin, LOW);
+    TankC = true;
   }
-  if (analogReadC(TareC) < LiftOff) {
-    digitalWrite(VentilC_SchnellEin, HIGH);
+  return TankC;
   }
-}
 
-void cylinder_relative_rise(int middlePosition, int relativeABCdist) {
+void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePosition, int relativeABCdist) {
   // check that level relative to other displacement sensors does not exceed threshold
   lnDSPA = analogReadA(TareA);
   lnDSPB = analogReadB(TareB);
@@ -605,7 +619,7 @@ void cylinder_relative_rise(int middlePosition, int relativeABCdist) {
   }
 }
 
-void cylinder_relative_descend(int LiftOff, int relativeABCdist) {
+void cylinder_relative_descend(int TareA, int TareB, int TareC, int LiftOff, int relativeABCdist) {
   // check that level relative to other displacement sensors does not exceed threshold
   lnDSPA = analogReadA(TareA);
   lnDSPB = analogReadB(TareB);
