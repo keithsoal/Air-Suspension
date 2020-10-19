@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 // Cylinder Middle Position ----------------------------------------
-const long middlePosition = 200;  //  115 200
+const long middlePosition = 180;  //  115 200
 const long middlePositionRange = 25; //50
 const long relativeABCdist = 20; // 15
 
@@ -20,7 +20,7 @@ unsigned long previousMillis = 0;
 unsigned long previousMillisThreshold = 0;
 const long interval = 1000; // interval at which to blink
 unsigned long serialPreviousMillis = 0;
-const long serialInterval = 300; // interval at which to write serial
+const long serialInterval = 1500; // interval at which to write serial
 unsigned long previousMillisOrange = 0;
 
 // Station A -------------------------------------------------------
@@ -29,7 +29,7 @@ const int VentilA_SchnellAus = CONTROLLINO_R1;
 const int VentilA_Heben = CONTROLLINO_R2;
 const int VentilA_Senken = CONTROLLINO_R3;
 
-int TravelSensorA           = CONTROLLINO_A1;
+int TravelSensorA = CONTROLLINO_A5; // usefull range (24-261)
 int lnDSPA = 0;
 
 // Station B -------------------------------------------------------
@@ -38,7 +38,7 @@ const int VentilB_SchnellAus = CONTROLLINO_R5;
 const int VentilB_Heben = CONTROLLINO_R6;
 const int VentilB_Senken = CONTROLLINO_R7;
 
-int TravelSensorB           = CONTROLLINO_A3;
+int TravelSensorB = CONTROLLINO_A3; // usefull range (80-287) max range (11-350 mV)
 int lnDSPB = 0;
 
 // Station C -------------------------------------------------------
@@ -47,7 +47,7 @@ const int VentilC_SchnellAus = CONTROLLINO_R9;
 const int VentilC_Heben = CONTROLLINO_R10;
 const int VentilC_Senken = CONTROLLINO_R11;
 
-int TravelSensorC           = CONTROLLINO_A5;
+int TravelSensorC = CONTROLLINO_A1; // usefull range (28-264)
 int lnDSPC = 0;
 
 // Other ----------------------------------------------------------
@@ -118,6 +118,12 @@ void loop() {
   if (state == 0) {
     digitalWrite(RedLight, HIGH);
     RedFlag = true;
+  }
+
+  if (state == 0){
+    TankA = check_tankA_condition(TareA, LiftOff);
+    TankB = check_tankB_condition(TareB, LiftOff);
+    TankC = check_tankC_condition(TareC, LiftOff);
   }
 
   // STATE 1 ----------------------------------------------------------
@@ -193,9 +199,11 @@ void loop() {
       cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
     }
 
-
+    lnDSPA = analogReadA(TareA);
+    lnDSPB = analogReadB(TareB);
+    lnDSPC = analogReadC(TareC);
     // if system reached middle position close valves
-    if (lnDSPB >= middlePosition-staticRange && lnDSPB >= middlePosition-staticRange && lnDSPC >= middlePosition-staticRange) {
+    if (lnDSPA >= middlePosition-staticRange && lnDSPB >= middlePosition-staticRange && lnDSPC >= middlePosition-staticRange) {
       state = 4;
       close_valves();
       digitalWrite(GreenLight, HIGH);
@@ -420,6 +428,13 @@ void loop() {
     Serial.print("Poti B: ");Serial.println(lnDSPB);
     Serial.print("Poti C: ");Serial.println(lnDSPC);
     Serial.print("State: ");Serial.println(state);
+    Serial.print("TankA: ");Serial.println(TankA);
+    Serial.print("TankB: ");Serial.println(TankB);
+    Serial.print("TankC: ");Serial.println(TankC);
+    Serial.println("-----------");
+    //Serial.print("TareA: ");Serial.println(TareA);
+    //Serial.print("TareB: ");Serial.println(TareB);
+    //Serial.print("TareC: ");Serial.println(TareC);
   }
 
   // Blinking Orange Light
@@ -518,6 +533,7 @@ void close_valves() {
   digitalWrite(VentilA_Senken, LOW);
   digitalWrite(VentilB_Senken, LOW);
   digitalWrite(VentilC_Senken, LOW);
+  delay(500);
 }
 
 void ventil_heben() {
@@ -535,6 +551,7 @@ void ventil_heben() {
   digitalWrite(VentilC_SchnellAus, LOW);
   digitalWrite(GreenLight, HIGH);
   digitalWrite(RedLight, HIGH);
+  delay(500);
 }
 
 void ventil_senken() {
@@ -550,6 +567,7 @@ void ventil_senken() {
   digitalWrite(VentilA_SchnellAus, LOW);
   digitalWrite(VentilB_SchnellAus, LOW);
   digitalWrite(VentilC_SchnellAus, LOW);
+  delay(500);
 }
 
 void ventil_schnell_aus() {
@@ -565,6 +583,7 @@ void ventil_schnell_aus() {
   digitalWrite(VentilA_SchnellEin, LOW);
   digitalWrite(VentilB_SchnellEin, LOW);
   digitalWrite(VentilC_SchnellEin, LOW);
+  delay(500);
 }
 
   // Poti checks ------------------------------------------------------
@@ -590,6 +609,25 @@ bool check_initial_displacementC(int TareC, int LiftOff) {
   }
   return TankC;
   }
+
+  bool check_tankA_condition(int TareA, int LiftOff) {
+    if (analogReadA(TareA) < LiftOff) {
+    TankA = false;
+  }
+  return TankA;
+}
+ bool check_tankB_condition(int TareB, int LiftOff) {
+    if (analogReadB(TareB) < LiftOff) {
+    TankB = false;
+  }
+  return TankB;
+}
+ bool check_tankC_condition(int TareC, int LiftOff) {
+    if (analogReadC(TareC) < LiftOff) {
+    TankC = false;
+  }
+  return TankC;
+}
 
 void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePosition, int relativeABCdist) {
   // check that level relative to other displacement sensors does not exceed threshold
