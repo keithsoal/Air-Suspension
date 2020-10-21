@@ -76,6 +76,7 @@ unsigned long previousMillisOverShootC = 0;
 int overShootCountA = 0;
 int overShootCountB = 0;
 int overShootCountC = 0;
+int overShootBuffer = 20;
 
 // ----------------------------------------------------------------
 
@@ -259,44 +260,17 @@ void loop() {
 
     // Overshoot checks every 2 seconds
 
-    if (lnDSPA > middlePosition + middlePositionRange) {
-      if (overShootCountA == 0){
-        overShootCountA = 1;
-        unsigned long currentMillis = millis();
-        previousMillisOverShootA = currentMillis;
-      }
-      unsigned long currentMillis = millis();
-      if (currentMillis - previousMillisOverShootA >= 2*interval) {
-        digitalWrite(VentilA_Senken, HIGH);
-        senkenFlagA = true;
-        overShootCountA = 0;
-      }
+    if (lnDSPA > middlePosition + middlePositionRange + overShootBuffer) {
+      digitalWrite(VentilA_Senken, HIGH);
+      senkenFlagA = true;
     }
-    if (lnDSPB > middlePosition + middlePositionRange) {
-      if (overShootCountB == 0){
-        overShootCountB = 1;
-        unsigned long currentMillis = millis();
-        previousMillisOverShootB = currentMillis;
-      }
-      unsigned long currentMillis = millis();
-      if (currentMillis - previousMillisOverShootB >= 2*interval) {
-        digitalWrite(VentilB_Senken, HIGH);
-        senkenFlagB = true;
-        overShootCountB = 0;
-      }
+    if (lnDSPB > middlePosition + middlePositionRange + overShootBuffer) {
+      digitalWrite(VentilB_Senken, HIGH);
+      senkenFlagB = true;
     }
-    if (lnDSPC > middlePosition + middlePositionRange) {
-      if (overShootCountC == 0){
-        overShootCountC = 1;
-        unsigned long currentMillis = millis();
-        previousMillisOverShootC = currentMillis;
-      }
-      unsigned long currentMillis = millis();
-      if (currentMillis - previousMillisOverShootC >= 2*interval) {
-        digitalWrite(VentilC_Senken, HIGH);
-        senkenFlagC = true;
-        overShootCountC = 0;
-      }
+    if (lnDSPC > middlePosition + middlePositionRange + overShootBuffer) {
+      digitalWrite(VentilC_Senken, HIGH);
+      senkenFlagC = true;
     }
   }
 
