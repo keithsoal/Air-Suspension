@@ -69,10 +69,14 @@ int LiftOff = 30; // mV for cyclinder off bottom position
 
 int staticRange = 5; // tolerance mV for value close
 
-// initial poti voltage
-//const long stationA = 30; // Large Air Suspension 25
-//const long stationB = 100; // Large Air Suspension 5
-//const long stationC = 30; // Large Air Suspension 5
+// Overshoot
+unsigned long previousMillisOverShootA = 0;
+unsigned long previousMillisOverShootB = 0;
+unsigned long previousMillisOverShootC = 0;
+int overShootCountA = 0;
+int overShootCountB = 0;
+int overShootCountC = 0;
+
 // ----------------------------------------------------------------
 
 void setup() {
@@ -120,7 +124,7 @@ void loop() {
     RedFlag = true;
   }
 
-  if (state == 0){
+  if (state == 0) {
     TankA = check_tankA_condition(TareA, LiftOff);
     TankB = check_tankB_condition(TareB, LiftOff);
     TankC = check_tankC_condition(TareC, LiftOff);
@@ -192,7 +196,7 @@ void loop() {
   if (state == 3) {
 
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillisThreshold >= 2*interval) {
+    if (currentMillis - previousMillisThreshold >= 2 * interval) {
       // save the last time you blinked the LED
       previousMillisThreshold = currentMillis;
       // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
@@ -203,7 +207,7 @@ void loop() {
     lnDSPB = analogReadB(TareB);
     lnDSPC = analogReadC(TareC);
     // if system reached middle position close valves
-    if (lnDSPA >= middlePosition-staticRange && lnDSPB >= middlePosition-staticRange && lnDSPC >= middlePosition-staticRange) {
+    if (lnDSPA >= middlePosition && lnDSPB >= middlePosition && lnDSPC >= middlePosition) {
       state = 4;
       close_valves();
       digitalWrite(GreenLight, HIGH);
@@ -253,24 +257,53 @@ void loop() {
       state = 3;
     }
 
+    // Overshoot checks every 2 seconds
+
     if (lnDSPA > middlePosition + middlePositionRange) {
-      digitalWrite(VentilA_Senken, HIGH);
-      senkenFlagA = true;
+      if (overShootCountA == 0){
+        overShootCountA = 1;
+        unsigned long currentMillis = millis();
+        previousMillisOverShootA = currentMillis;
+      }
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillisOverShootA >= 2*interval) {
+        digitalWrite(VentilA_Senken, HIGH);
+        senkenFlagA = true;
+        overShootCountA = 0;
+      }
     }
     if (lnDSPB > middlePosition + middlePositionRange) {
-      digitalWrite(VentilB_Senken, HIGH);
-      senkenFlagB = true;
+      if (overShootCountB == 0){
+        overShootCountB = 1;
+        unsigned long currentMillis = millis();
+        previousMillisOverShootB = currentMillis;
+      }
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillisOverShootB >= 2*interval) {
+        digitalWrite(VentilB_Senken, HIGH);
+        senkenFlagB = true;
+        overShootCountB = 0;
+      }
     }
     if (lnDSPC > middlePosition + middlePositionRange) {
-      digitalWrite(VentilC_Senken, HIGH);
-      senkenFlagC = true;
+      if (overShootCountC == 0){
+        overShootCountC = 1;
+        unsigned long currentMillis = millis();
+        previousMillisOverShootC = currentMillis;
+      }
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillisOverShootC >= 2*interval) {
+        digitalWrite(VentilC_Senken, HIGH);
+        senkenFlagC = true;
+        overShootCountC = 0;
+      }
     }
   }
 
   // cylinder A
   if (state == 4 && senkenFlagA == true) {
     lnDSPA = analogReadA(TareA);
-    if (lnDSPA < middlePosition) {
+    if (lnDSPA < middlePosition + middlePositionRange) {
       digitalWrite(VentilA_Senken, LOW);
       senkenFlagA = false;
     }
@@ -278,7 +311,7 @@ void loop() {
   // cylinder B
   if (state == 4 && senkenFlagB == true) {
     lnDSPB = analogReadB(TareB);
-    if (lnDSPB < middlePosition) {
+    if (lnDSPB < middlePosition + middlePositionRange) {
       digitalWrite(VentilB_Senken, LOW);
       senkenFlagB = false;
     }
@@ -286,7 +319,7 @@ void loop() {
   // cylinder C
   if (state == 4 && senkenFlagC == true) {
     lnDSPC = analogReadC(TareC);
-    if (lnDSPC < middlePosition) {
+    if (lnDSPC < middlePosition + middlePositionRange) {
       digitalWrite(VentilC_Senken, LOW);
       senkenFlagC = false;
     }
@@ -320,7 +353,13 @@ void loop() {
 
   if (state == 6) {
     // check that level relative to other displacement sensors does not exceed threshold
-    cylinder_relative_descend(TareA, TareB, TareC, LiftOff, relativeABCdist);
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillisThreshold >= 2 * interval) {
+      // save the last time you blinked the LED
+      previousMillisThreshold = currentMillis;
+      // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
+      cylinder_relative_descend(TareA, TareB, TareC, LiftOff, relativeABCdist);
+    }
   }
 
   // Blinking Red Light
@@ -415,8 +454,6 @@ void loop() {
   lnDSPA = analogReadA(TareA);
   lnDSPB = analogReadB(TareB);
   lnDSPC = analogReadC(TareC);
-  //  Serial.println(lnDSPA);
-  //  Serial.println(state);
 
   // reduced speed to serial write
   unsigned long currentMillis = millis();
@@ -424,21 +461,28 @@ void loop() {
     // save the last time you blinked the LED
     serialPreviousMillis = currentMillis;
 
-    Serial.print("Poti A: ");Serial.println(lnDSPA);
-    Serial.print("Poti B: ");Serial.println(lnDSPB);
-    Serial.print("Poti C: ");Serial.println(lnDSPC);
-    Serial.print("State: ");Serial.println(state);
-    Serial.print("TankA: ");Serial.println(TankA);
-    Serial.print("TankB: ");Serial.println(TankB);
-    Serial.print("TankC: ");Serial.println(TankC);
-    Serial.println("-----------");
-    //Serial.print("TareA: ");Serial.println(TareA);
-    //Serial.print("TareB: ");Serial.println(TareB);
-    //Serial.print("TareC: ");Serial.println(TareC);
+    // Serial Monitor
+//    Serial.print("Poti A: "); Serial.println(lnDSPA);
+//    Serial.print("Poti B: "); Serial.println(lnDSPB);
+//    Serial.print("Poti C: "); Serial.println(lnDSPC);
+//    Serial.print("State: "); Serial.println(state);
+//    Serial.print("TankA: "); Serial.println(TankA);
+//    Serial.print("TankB: "); Serial.println(TankB);
+//    Serial.print("TankC: "); Serial.println(TankC);
+//    Serial.println("-----------");
+    
+    // Python -> InfluxDB -> Grafana
+    Serial.print(lnDSPA);
+    Serial.print(",");
+    Serial.print(lnDSPB);
+    Serial.print(",");
+    Serial.print(lnDSPC);
+    Serial.print(",");
+    Serial.println(state);
   }
 
   // Blinking Orange Light
-  if ( state == 3 ||  state == 4 ||  state == 6 ||  state == 7) {
+  if ( state == 3 ||  state == 4 ||  state == 6 ) {
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillisOrange >= interval) {
       // save the last time you blinked the LED
@@ -448,7 +492,7 @@ void loop() {
   }
 
   // Orange light off
-  if (state == 0 || state == 1 || state == 2){
+  if (state == 0 || state == 1 || state == 2 ||  state == 7) {
     digitalWrite(OrangeLight, LOW);
     OrangeFlag = false;
   }
@@ -456,52 +500,52 @@ void loop() {
 
 }
 
-  // TARE -----------------------------------------------------------------
+// TARE -----------------------------------------------------------------
 
-  int tare_potiA() {
-    int TareA;
-    TareA = analogRead(TravelSensorA);
-    return TareA;
+int tare_potiA() {
+  int TareA;
+  TareA = analogRead(TravelSensorA);
+  return TareA;
 }
 
-  int tare_potiB() {
-    int TareB;
-    TareB = analogRead(TravelSensorB);
-    return TareB;
+int tare_potiB() {
+  int TareB;
+  TareB = analogRead(TravelSensorB);
+  return TareB;
 }
 
-  int tare_potiC() {
-    int TareC;
-    TareC = analogRead(TravelSensorC);
-    return TareC;
-}
-  
-  
-  // Analog Read ----------------------------------------------------------
-
-  int analogReadA(int TareA) {
-    int lnDSPA;
-    lnDSPA = analogRead(TravelSensorA);
-    lnDSPA = lnDSPA - TareA;
-    return lnDSPA;
+int tare_potiC() {
+  int TareC;
+  TareC = analogRead(TravelSensorC);
+  return TareC;
 }
 
-  int analogReadB(int TareB) {
-    int lnDSPB;
-    lnDSPB = analogRead(TravelSensorB);
-    lnDSPB = lnDSPB - TareB;
-    return lnDSPB;
+
+// Analog Read ----------------------------------------------------------
+
+int analogReadA(int TareA) {
+  int lnDSPA;
+  lnDSPA = analogRead(TravelSensorA);
+  lnDSPA = lnDSPA - TareA;
+  return lnDSPA;
 }
 
-  int analogReadC(int TareC) {
-    int lnDSPC;
-    lnDSPC = analogRead(TravelSensorC);
-    lnDSPC = lnDSPC - TareC;
-    return lnDSPC;
+int analogReadB(int TareB) {
+  int lnDSPB;
+  lnDSPB = analogRead(TravelSensorB);
+  lnDSPB = lnDSPB - TareB;
+  return lnDSPB;
 }
 
-  // Valve Control ------------------------------------------------------
-  
+int analogReadC(int TareC) {
+  int lnDSPC;
+  lnDSPC = analogRead(TravelSensorC);
+  lnDSPC = lnDSPC - TareC;
+  return lnDSPC;
+}
+
+// Valve Control ------------------------------------------------------
+
 void start_filling_cyclinders() {
   // start filling cyclinders
   digitalWrite(VentilA_SchnellEin, HIGH);
@@ -549,8 +593,6 @@ void ventil_heben() {
   digitalWrite(VentilA_SchnellAus, LOW);
   digitalWrite(VentilB_SchnellAus, LOW);
   digitalWrite(VentilC_SchnellAus, LOW);
-  digitalWrite(GreenLight, HIGH);
-  digitalWrite(RedLight, HIGH);
   delay(500);
 }
 
@@ -586,8 +628,8 @@ void ventil_schnell_aus() {
   delay(500);
 }
 
-  // Poti checks ------------------------------------------------------
-  
+// Poti checks ------------------------------------------------------
+
 bool check_initial_displacementA(int TareA, int LiftOff) {
   if (analogReadA(TareA) > LiftOff) {
     digitalWrite(VentilA_SchnellEin, LOW);
@@ -600,7 +642,7 @@ bool check_initial_displacementB(int TareB, int LiftOff) {
     digitalWrite(VentilB_SchnellEin, LOW);
     TankB = true;
   }
-  return TankA;
+  return TankB;
 }
 bool check_initial_displacementC(int TareC, int LiftOff) {
   if (analogReadC(TareC) > LiftOff) {
@@ -608,22 +650,22 @@ bool check_initial_displacementC(int TareC, int LiftOff) {
     TankC = true;
   }
   return TankC;
-  }
+}
 
-  bool check_tankA_condition(int TareA, int LiftOff) {
-    if (analogReadA(TareA) < LiftOff) {
+bool check_tankA_condition(int TareA, int LiftOff) {
+  if (analogReadA(TareA) < LiftOff) {
     TankA = false;
   }
   return TankA;
 }
- bool check_tankB_condition(int TareB, int LiftOff) {
-    if (analogReadB(TareB) < LiftOff) {
+bool check_tankB_condition(int TareB, int LiftOff) {
+  if (analogReadB(TareB) < LiftOff) {
     TankB = false;
   }
   return TankB;
 }
- bool check_tankC_condition(int TareC, int LiftOff) {
-    if (analogReadC(TareC) < LiftOff) {
+bool check_tankC_condition(int TareC, int LiftOff) {
+  if (analogReadC(TareC) < LiftOff) {
     TankC = false;
   }
   return TankC;
@@ -635,21 +677,21 @@ void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePosition,
   lnDSPB = analogReadB(TareB);
   lnDSPC = analogReadC(TareC);
   // cylinder A
-  if (lnDSPA < middlePosition && lnDSPA <= (lnDSPB + relativeABCdist) || lnDSPA < middlePosition && lnDSPA <= (lnDSPC + relativeABCdist)) {
+  if (lnDSPA < middlePosition && lnDSPA <= (lnDSPB + relativeABCdist) && lnDSPA <= (lnDSPC + relativeABCdist)) {
     digitalWrite(VentilA_Heben, HIGH);
   }
   else {
     digitalWrite(VentilA_Heben, LOW);
   }
   // cylinder B
-  if (lnDSPB < middlePosition && lnDSPB <= (lnDSPC + relativeABCdist) || lnDSPB < middlePosition && lnDSPB <= (lnDSPA + relativeABCdist)) {
+  if (lnDSPB < middlePosition && lnDSPB <= (lnDSPC + relativeABCdist) && lnDSPB <= (lnDSPA + relativeABCdist)) {
     digitalWrite(VentilB_Heben, HIGH);
   }
   else {
     digitalWrite(VentilB_Heben, LOW);
   }
   // cylinder C
-  if (lnDSPC < middlePosition && lnDSPC <= (lnDSPA + relativeABCdist) || lnDSPC < middlePosition && lnDSPC <= (lnDSPB + relativeABCdist)) {
+  if (lnDSPC < middlePosition && lnDSPC <= (lnDSPA + relativeABCdist) && lnDSPC <= (lnDSPB + relativeABCdist)) {
     digitalWrite(VentilC_Heben, HIGH);
   }
   else {
@@ -663,21 +705,21 @@ void cylinder_relative_descend(int TareA, int TareB, int TareC, int LiftOff, int
   lnDSPB = analogReadB(TareB);
   lnDSPC = analogReadC(TareC);
   // cylinder A
-  if (lnDSPA > LiftOff && lnDSPA <= (lnDSPB - relativeABCdist) || lnDSPA > LiftOff && lnDSPA <= (lnDSPC - relativeABCdist)) {
+  if (lnDSPA < LiftOff || lnDSPA <= (lnDSPB - relativeABCdist) || lnDSPA <= (lnDSPC - relativeABCdist)) {
     digitalWrite(VentilA_Senken, LOW);
   }
   else {
     digitalWrite(VentilA_Senken, HIGH);
   }
   // cylinder B
-  if (lnDSPB > LiftOff && lnDSPB <= (lnDSPC - relativeABCdist) || lnDSPB > LiftOff && lnDSPB <= (lnDSPA - relativeABCdist)) {
+  if (lnDSPB < LiftOff || lnDSPB <= (lnDSPC - relativeABCdist) || lnDSPB <= (lnDSPA - relativeABCdist)) {
     digitalWrite(VentilB_Senken, LOW);
   }
   else {
     digitalWrite(VentilB_Senken, HIGH);
   }
   // cylinder C
-  if (lnDSPC > LiftOff && lnDSPC <= (lnDSPA - relativeABCdist) || lnDSPC > LiftOff && lnDSPC <= (lnDSPB - relativeABCdist)) {
+  if (lnDSPC < LiftOff || lnDSPC <= (lnDSPA - relativeABCdist) || lnDSPC <= (lnDSPB - relativeABCdist)) {
     digitalWrite(VentilC_Senken, LOW);
   }
   else {
@@ -685,8 +727,8 @@ void cylinder_relative_descend(int TareA, int TareB, int TareC, int LiftOff, int
   }
 }
 
-  // Blinker ------------------------------------------------------
-  
+// Blinker ------------------------------------------------------
+
 bool blinking_green_light(bool GreenFlag) {
   // if the LED is off turn it on and vice-versa:
   if (GreenFlag == false) {
