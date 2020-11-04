@@ -3,7 +3,7 @@
 
 // Cylinder Middle Position ----------------------------------------
 const long middlePosition = 180;  //  115 200
-const long middlePositionRange = 25; //50
+const long middlePositionRange = 50; // 25 start test 50
 const long relativeABCdist = 20; // 15
 
 // Lights & Buttons ------------------------------------------------
@@ -77,6 +77,16 @@ int overShootCountA = 0;
 int overShootCountB = 0;
 int overShootCountC = 0;
 int overShootBuffer = 20;
+
+// DELAY
+int delayMillisA = 0;
+int delayFlagA = 0;
+int delayMillisB = 0;
+int delayFlagB = 0;
+int delayMillisC = 0;
+int delayFlagC = 0;
+
+const long DELAY = 5000; // delay interval
 
 // ----------------------------------------------------------------
 
@@ -249,13 +259,68 @@ void loop() {
     lnDSPB = analogReadB(TareB);
     lnDSPC = analogReadC(TareC);
     if (lnDSPA < middlePosition - middlePositionRange) {
-      state = 3;
+
+      // initialize delayMillis on first entry
+      if (delayFlagA == 0){
+        delayMillisA = millis();
+        // set delay flag 1 start delay timer
+        delayFlagA = 1;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - delayMillisA > DELAY) {
+        state = 3;
+        delayFlagA = 0;
+      }
+      // else keep counting   
     }
+    else {
+      delayFlagA = 0;
+    }
+    
     if (lnDSPB < middlePosition - middlePositionRange) {
-      state = 3;
+
+      // initialize delayMillis on first entry
+      if (delayFlagB == 0){
+        delayMillisB = millis();
+        // set delay flag 1 start delay timer
+        delayFlagB = 1;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - delayMillisB > DELAY) {
+        state = 3;
+        delayFlagB = 0;
+      }
+      // else keep counting 
+    }
+    else {
+      delayFlagB = 0;
     }
     if (lnDSPC < middlePosition - middlePositionRange) {
-      state = 3;
+
+      // initialize delayMillis on first entry
+      if (delayFlagC == 0){
+        delayMillisC = millis();
+        // set delay flag 1 start delay timer
+        delayFlagC = 1;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - delayMillisC > DELAY) {
+        state = 3;
+        delayFlagC = 0;
+      }
+      // else keep counting 
+    }
+    else {
+      delayFlagC = 0;
     }
 
     // Overshoot checks every 2 seconds
@@ -436,23 +501,23 @@ void loop() {
     serialPreviousMillis = currentMillis;
 
     // Serial Monitor
-//    Serial.print("Poti A: "); Serial.println(lnDSPA);
-//    Serial.print("Poti B: "); Serial.println(lnDSPB);
-//    Serial.print("Poti C: "); Serial.println(lnDSPC);
-//    Serial.print("State: "); Serial.println(state);
-//    Serial.print("TankA: "); Serial.println(TankA);
-//    Serial.print("TankB: "); Serial.println(TankB);
-//    Serial.print("TankC: "); Serial.println(TankC);
-//    Serial.println("-----------");
+    Serial.print("Poti A: "); Serial.println(lnDSPA);
+    Serial.print("Poti B: "); Serial.println(lnDSPB);
+    Serial.print("Poti C: "); Serial.println(lnDSPC);
+    Serial.print("State: "); Serial.println(state);
+    Serial.print("TankA: "); Serial.println(TankA);
+    Serial.print("TankB: "); Serial.println(TankB);
+    Serial.print("TankC: "); Serial.println(TankC);
+    Serial.println("-----------");
     
     // Python -> InfluxDB -> Grafana
-    Serial.print(lnDSPA);
-    Serial.print(",");
-    Serial.print(lnDSPB);
-    Serial.print(",");
-    Serial.print(lnDSPC);
-    Serial.print(",");
-    Serial.println(state);
+//    Serial.print(lnDSPA);
+//    Serial.print(",");
+//    Serial.print(lnDSPB);
+//    Serial.print(",");
+//    Serial.print(lnDSPC);
+//    Serial.print(",");
+//    Serial.println(state);
   }
 
   // Blinking Orange Light
