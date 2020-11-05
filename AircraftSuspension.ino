@@ -3,7 +3,7 @@
 
 // Cylinder Middle Position ----------------------------------------
 const long middlePosition = 180;  //  115 200
-const long middlePositionRange = 50; // 25 start test 50
+const long middlePositionRange = 25; // 25 start test 50 / 40 was too big
 const long relativeABCdist = 20; // 15
 
 // Lights & Buttons ------------------------------------------------
@@ -65,7 +65,7 @@ bool TankC = false;
 int TareA = 0;
 int TareB = 0;
 int TareC = 0;
-int LiftOff = 30; // mV for cyclinder off bottom position
+int LiftOff = 10; // mV for cyclinder off bottom position
 
 int staticRange = 5; // tolerance mV for value close
 
@@ -76,15 +76,20 @@ unsigned long previousMillisOverShootC = 0;
 int overShootCountA = 0;
 int overShootCountB = 0;
 int overShootCountC = 0;
-int overShootBuffer = 20;
+int overShootBuffer = 30;
 
 // DELAY
-int delayMillisA = 0;
+unsigned long delayMillisA = 0;
 int delayFlagA = 0;
-int delayMillisB = 0;
+unsigned long delayMillisB = 0;
 int delayFlagB = 0;
-int delayMillisC = 0;
+unsigned long delayMillisC = 0;
 int delayFlagC = 0;
+
+// Cylinder Rise Delay
+int cylinderRiseFlag = 0;
+unsigned long cylinderRiseMillis = 0;
+const long delayInterval = 500; //
 
 const long DELAY = 5000; // delay interval
 
@@ -206,13 +211,24 @@ void loop() {
   // push up step wise to level
   if (state == 3) {
 
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillisThreshold >= 2 * interval) {
-      // save the last time you blinked the LED
-      previousMillisThreshold = currentMillis;
-      // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
-      cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
-    }
+// THIS DOESNT WORK YET
+//    if (cylinderRiseFlag == 0){
+//      cylinderRiseMillis = millis();
+//      cylinderRiseFlag = 1;
+//      delay(100);
+//    }
+//    unsigned long currentMillis = millis();
+//    if (currentMillis - cylinderRiseMillis >= delayInterval) {
+//      // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
+//      cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
+//      cylinderRiseFlag = 0;
+//    }
+//    else {
+//      cylinderRiseFlag = 0;
+//    }
+
+    // REMOVE THIS LINE
+    cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
 
     lnDSPA = analogReadA(TareA);
     lnDSPB = analogReadB(TareB);
