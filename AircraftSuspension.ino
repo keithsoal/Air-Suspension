@@ -1,10 +1,9 @@
 #include <Controllino.h>
 #include <stdio.h>
+#include "settings.h"
 
 // Cylinder Middle Position ----------------------------------------
-const long middlePosition = 180;  //  115 200
-const long middlePositionRange = 25; // 25 start test 50 / 40 was too big
-const long relativeABCdist = 20; // 15
+// See Settings.h
 
 // Lights & Buttons ------------------------------------------------
 const int GreenLight   = CONTROLLINO_R13;
@@ -89,9 +88,6 @@ int delayFlagC = 0;
 // Cylinder Rise Delay
 int cylinderRiseFlag = 0;
 unsigned long cylinderRiseMillis = 0;
-const long delayInterval = 500; //
-
-const long DELAY = 5000; // delay interval
 
 // ----------------------------------------------------------------
 
