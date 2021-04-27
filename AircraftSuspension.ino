@@ -89,6 +89,10 @@ int delayFlagC = 0;
 int cylinderRiseFlag = 0;
 unsigned long cylinderRiseMillis = 0;
 
+// Buzzer
+bool BuzzFlag = false;
+unsigned long previousMillisBuzz = 0;
+
 // ----------------------------------------------------------------
 
 void setup() {
@@ -117,9 +121,17 @@ void setup() {
   pinMode(VentilC_Heben, OUTPUT);
   pinMode(VentilC_Senken, OUTPUT);
   pinMode(TravelSensorC, INPUT);
+  // Buzzer -------------------------
+  pinMode (CONTROLLINO_D0, OUTPUT);
 }
 
 void loop() {
+
+  // Check Initial Condition ------------------------------------------
+
+  if (state == 0 && TareA == 0 && TareB == 0 && TareC == 0) {
+    state = check_initial_state();
+  }
 
   // TARE -------------------------------------------------------------
 
@@ -207,21 +219,21 @@ void loop() {
   // push up step wise to level
   if (state == 3) {
 
-// THIS DOESNT WORK YET
-//    if (cylinderRiseFlag == 0){
-//      cylinderRiseMillis = millis();
-//      cylinderRiseFlag = 1;
-//      delay(100);
-//    }
-//    unsigned long currentMillis = millis();
-//    if (currentMillis - cylinderRiseMillis >= delayInterval) {
-//      // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
-//      cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
-//      cylinderRiseFlag = 0;
-//    }
-//    else {
-//      cylinderRiseFlag = 0;
-//    }
+    // THIS DOESNT WORK YET
+    //    if (cylinderRiseFlag == 0){
+    //      cylinderRiseMillis = millis();
+    //      cylinderRiseFlag = 1;
+    //      delay(100);
+    //    }
+    //    unsigned long currentMillis = millis();
+    //    if (currentMillis - cylinderRiseMillis >= delayInterval) {
+    //      // check that level relative to other displacement sensors does not exceed threshold (ONLY CHECKS EVERY 2 SECONDS)
+    //      cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
+    //      cylinderRiseFlag = 0;
+    //    }
+    //    else {
+    //      cylinderRiseFlag = 0;
+    //    }
 
     // REMOVE THIS LINE
     cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
@@ -273,7 +285,7 @@ void loop() {
     if (lnDSPA < middlePosition - middlePositionRange) {
 
       // initialize delayMillis on first entry
-      if (delayFlagA == 0){
+      if (delayFlagA == 0) {
         delayMillisA = millis();
         // set delay flag 1 start delay timer
         delayFlagA = 1;
@@ -286,16 +298,16 @@ void loop() {
         state = 3;
         delayFlagA = 0;
       }
-      // else keep counting   
+      // else keep counting
     }
     else {
       delayFlagA = 0;
     }
-    
+
     if (lnDSPB < middlePosition - middlePositionRange) {
 
       // initialize delayMillis on first entry
-      if (delayFlagB == 0){
+      if (delayFlagB == 0) {
         delayMillisB = millis();
         // set delay flag 1 start delay timer
         delayFlagB = 1;
@@ -308,7 +320,7 @@ void loop() {
         state = 3;
         delayFlagB = 0;
       }
-      // else keep counting 
+      // else keep counting
     }
     else {
       delayFlagB = 0;
@@ -316,7 +328,7 @@ void loop() {
     if (lnDSPC < middlePosition - middlePositionRange) {
 
       // initialize delayMillis on first entry
-      if (delayFlagC == 0){
+      if (delayFlagC == 0) {
         delayMillisC = millis();
         // set delay flag 1 start delay timer
         delayFlagC = 1;
@@ -329,7 +341,7 @@ void loop() {
         state = 3;
         delayFlagC = 0;
       }
-      // else keep counting 
+      // else keep counting
     }
     else {
       delayFlagC = 0;
@@ -480,7 +492,9 @@ void loop() {
     delay(1000);
   }
 
-  // Poti failure ----------------------------------------------
+
+
+ // Poti failure ----------------------------------------------
   //
   //   if (state == 3 && analogRead(TravelSensorA) < stationA || state == 3 && analogRead(TravelSensorB) < stationB ||
   //   state == 3 && analogRead(TravelSensorC) < stationC || state == 4 && analogRead(TravelSensorA) < stationA ||
@@ -521,15 +535,33 @@ void loop() {
     Serial.print("TankB: "); Serial.println(TankB);
     Serial.print("TankC: "); Serial.println(TankC);
     Serial.println("-----------");
-    
+
+      // Poti failure ----------------------------------------------
+
+  //TareA = analogRead(TravelSensorA);
+  //TareB = analogRead(TravelSensorB);
+  //TareC = analogRead(TravelSensorC);
+
+  // if (state != 0 && lnDSPA == 0 || state != 0 && lnDSPB == 0 || state != 0 && lnDSPC == 0)
+  if (state != 0) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillisBuzz >= interval) {
+      // save the last time you blinked the LED
+      previousMillisBuzz = currentMillis;
+      BuzzFlag = myTone(CONTROLLINO_D0, BuzzFlag);
+      Serial.println("Entered Loop");
+    }
+
+  }
+
     // Python -> InfluxDB -> Grafana
-//    Serial.print(lnDSPA);
-//    Serial.print(",");
-//    Serial.print(lnDSPB);
-//    Serial.print(",");
-//    Serial.print(lnDSPC);
-//    Serial.print(",");
-//    Serial.println(state);
+    //    Serial.print(lnDSPA);
+    //    Serial.print(",");
+    //    Serial.print(lnDSPB);
+    //    Serial.print(",");
+    //    Serial.print(lnDSPC);
+    //    Serial.print(",");
+    //    Serial.println(state);
   }
 
   // Blinking Orange Light
@@ -549,6 +581,35 @@ void loop() {
   }
 
 
+}
+
+// Check Start position -------------------------------------------------
+
+int check_initial_state() {
+  //int TareA;
+  //int TareB;
+  //int TareB;
+
+  TareA = analogRead(TravelSensorA);
+  TareB = analogRead(TravelSensorB);
+  TareC = analogRead(TravelSensorC);
+
+
+  if (TareA > 100 || TareB > 100 || TareC > 100)
+  {
+    int state;
+    state = 3;
+  }
+  else if (TareA < 100 && TareA > 40 || TareB < 100 && TareB > 40 || TareC < 100 && TareC > 40)
+  {
+    int state;
+    state = 2;
+  }
+  else {
+    int state;
+    state = 0;
+  }
+  return state;
 }
 
 // TARE -----------------------------------------------------------------
@@ -817,4 +878,16 @@ bool blinking_orange_light(bool OrangeFlag) {
     OrangeFlag = false;
   }
   return OrangeFlag;
+}
+
+bool myTone(byte pin, int BuzzFlag) {
+  if (BuzzFlag == false) {
+    digitalWrite(pin, LOW);
+    BuzzFlag = true;
+  }
+  else {
+    digitalWrite(pin, HIGH);
+    BuzzFlag = false;
+  }
+  return BuzzFlag;
 }
