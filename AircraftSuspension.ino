@@ -90,6 +90,7 @@ int cylinderRiseFlag = 0;
 unsigned long cylinderRiseMillis = 0;
 
 // Buzzer
+bool BUZZ = false;
 bool BuzzFlag = false;
 unsigned long previousMillisBuzz = 0;
 
@@ -494,7 +495,7 @@ void loop() {
 
 
 
- // Poti failure ----------------------------------------------
+  // Poti failure ----------------------------------------------
   //
   //   if (state == 3 && analogRead(TravelSensorA) < stationA || state == 3 && analogRead(TravelSensorB) < stationB ||
   //   state == 3 && analogRead(TravelSensorC) < stationC || state == 4 && analogRead(TravelSensorA) < stationA ||
@@ -536,33 +537,31 @@ void loop() {
     Serial.print("TankC: "); Serial.println(TankC);
     Serial.println("-----------");
 
-      // Poti failure ----------------------------------------------
+    // Poti failure ----------------------------------------------
 
-  //TareA = analogRead(TravelSensorA);
-  //TareB = analogRead(TravelSensorB);
-  //TareC = analogRead(TravelSensorC);
+    if (state != 0) {
+      if (lnDSPA == 0 || lnDSPB == 0 || lnDSPC == 0) {
+        if (state == 3 || state == 4) {
+          state = 6;
+          BUZZ = true;
+        }
+      }
+    }
+  }
 
-  // if (state != 0 && lnDSPA == 0 || state != 0 && lnDSPB == 0 || state != 0 && lnDSPC == 0)
-  if (state != 0) {
+
+  // Buzzer ----------------------------------------------------
+
+  if (BUZZ == true) {
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillisBuzz >= interval) {
       // save the last time you blinked the LED
       previousMillisBuzz = currentMillis;
       BuzzFlag = myTone(CONTROLLINO_D0, BuzzFlag);
-      Serial.println("Entered Loop");
     }
-
   }
 
-    // Python -> InfluxDB -> Grafana
-    //    Serial.print(lnDSPA);
-    //    Serial.print(",");
-    //    Serial.print(lnDSPB);
-    //    Serial.print(",");
-    //    Serial.print(lnDSPC);
-    //    Serial.print(",");
-    //    Serial.println(state);
-  }
+  // Orange Light ----------------------------------------------
 
   // Blinking Orange Light
   if ( state == 3 ||  state == 4 ||  state == 6 ) {
@@ -579,37 +578,20 @@ void loop() {
     digitalWrite(OrangeLight, LOW);
     OrangeFlag = false;
   }
-
-
 }
 
 // Check Start position -------------------------------------------------
 
 int check_initial_state() {
-  //int TareA;
-  //int TareB;
-  //int TareB;
 
   TareA = analogRead(TravelSensorA);
   TareB = analogRead(TravelSensorB);
   TareC = analogRead(TravelSensorC);
 
-
-  if (TareA > 100 || TareB > 100 || TareC > 100)
-  {
-    int state;
-    state = 3;
+  if (TareA > potiERROR || TareB > potiERROR || TareC > potiERROR) {
+    state = 6;
+    BUZZ = true;
   }
-  else if (TareA < 100 && TareA > 40 || TareB < 100 && TareB > 40 || TareC < 100 && TareC > 40)
-  {
-    int state;
-    state = 2;
-  }
-  else {
-    int state;
-    state = 0;
-  }
-  return state;
 }
 
 // TARE -----------------------------------------------------------------
