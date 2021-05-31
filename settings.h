@@ -10,3 +10,4 @@ const long DELAY = 5000; // delay interval
 
 // Poti falure value -----------------------------------------------
 const long potiERROR = 50;
+const long DELAYPOTI = 60000; // 60 seconds zero reading gives alarm

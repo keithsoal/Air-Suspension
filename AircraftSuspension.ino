@@ -140,9 +140,6 @@ void loop() {
   if (state == 0 && firstLoop == true) {
     firstLoop = false;
     state = check_initial_state();
-    if (state == 6) {
-      //BUZZ = true;
-    }
   }
 
   // TARE -------------------------------------------------------------
@@ -558,9 +555,9 @@ void loop() {
       TTB = analogRead(TravelSensorB);
       TTC = analogRead(TravelSensorC);
 
-    Serial.print("TTAA: "); Serial.println(TTA);
-    Serial.print("TTB: "); Serial.println(TTB);
-    Serial.print("TTC: "); Serial.println(TTC);
+    //Serial.print("TTAA: "); Serial.println(TTA);
+    //Serial.print("TTB: "); Serial.println(TTB);
+    //Serial.print("TTC: "); Serial.println(TTC);
 
       if (TTA == 0 || TTB == 0 || TTC == 0) {
         // initialize delayMillis on first entry
@@ -572,7 +569,7 @@ void loop() {
         }
         // if delay timer exceeds 5 seconds change state
         unsigned long currentMillis = millis();
-        if (currentMillis - delayMillisP > DELAY) {
+        if (currentMillis - delayMillisP > DELAYPOTI) {
           state = 6;
           BUZZ = true;
         }
