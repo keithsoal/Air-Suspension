@@ -93,6 +93,13 @@ unsigned long cylinderRiseMillis = 0;
 bool BUZZ = false;
 bool BuzzFlag = false;
 unsigned long previousMillisBuzz = 0;
+bool firstLoop = true;
+unsigned long previousMillisPoti = 0;
+int delayFlagP = 0;
+unsigned long delayMillisP = 0;
+int TTA = 0;
+int TTB = 0;
+int TTC = 0;
 
 // ----------------------------------------------------------------
 
@@ -130,8 +137,12 @@ void loop() {
 
   // Check Initial Condition ------------------------------------------
 
-  if (state == 0 && TareA == 0 && TareB == 0 && TareC == 0) {
+  if (state == 0 && firstLoop == true) {
+    firstLoop = false;
     state = check_initial_state();
+    if (state == 6) {
+      //BUZZ = true;
+    }
   }
 
   // TARE -------------------------------------------------------------
@@ -539,14 +550,63 @@ void loop() {
 
     // Poti failure ----------------------------------------------
 
-    if (state != 0) {
-      if (lnDSPA == 0 || lnDSPB == 0 || lnDSPC == 0) {
-        if (state == 3 || state == 4) {
+
+    if (state == 3 || state == 4) {
+
+
+      TTA = analogRead(TravelSensorA);
+      TTB = analogRead(TravelSensorB);
+      TTC = analogRead(TravelSensorC);
+
+    Serial.print("TTAA: "); Serial.println(TTA);
+    Serial.print("TTB: "); Serial.println(TTB);
+    Serial.print("TTC: "); Serial.println(TTC);
+
+      if (TTA == 0 || TTB == 0 || TTC == 0) {
+        // initialize delayMillis on first entry
+        if (delayFlagP == 0) {
+          delayMillisP = millis();
+          // set delay flag 1 start delay timer
+          delayFlagP = 1;
+          delay(100);
+        }
+        // if delay timer exceeds 5 seconds change state
+        unsigned long currentMillis = millis();
+        if (currentMillis - delayMillisP > DELAY) {
           state = 6;
           BUZZ = true;
         }
+        // else keep counting
+      }
+      else {
+        delayFlagP = 0;
       }
     }
+
+
+
+
+
+    //    if (state == 3 || state == 4) {
+    //      if (lnDSPA == 0 || lnDSPB == 0 || lnDSPC == 0) {
+    //        unsigned long currentMillis = millis();
+    //        if (currentMillis - previousMillisPoti >= DELAY) {
+    //          // save the last time you blinked the LED
+    //          previousMillisBuzz = currentMillis;
+    //          state = 6;
+    //          BUZZ = true;
+    //        }
+    //      }
+    //    }
+
+    //    if (state != 0) {
+    //      if (lnDSPA == 0 || lnDSPB == 0 || lnDSPC == 0) {
+    //        if (state == 3 || state == 4) {
+    //          state = 6;
+    //          BUZZ = true;
+    //        }
+    //      }
+    //    }
   }
 
 
@@ -584,14 +644,22 @@ void loop() {
 
 int check_initial_state() {
 
-  TareA = analogRead(TravelSensorA);
-  TareB = analogRead(TravelSensorB);
-  TareC = analogRead(TravelSensorC);
+  int TA = 0;
+  int TB = 0;
+  int TC = 0;
 
-  if (TareA > potiERROR || TareB > potiERROR || TareC > potiERROR) {
-    state = 6;
+  TA = analogRead(TravelSensorA);
+  TB = analogRead(TravelSensorB);
+  TC = analogRead(TravelSensorC);
+
+  if (TA > potiERROR || TB > potiERROR || TC > potiERROR) {
     BUZZ = true;
+    state = 6;
   }
+  else {
+    state = 0;
+  }
+  return state;
 }
 
 // TARE -----------------------------------------------------------------

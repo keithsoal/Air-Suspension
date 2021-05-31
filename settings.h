@@ -9,4 +9,4 @@ const long relativeABCdist = 20; // 15
 const long DELAY = 5000; // delay interval
 
 // Poti falure value -----------------------------------------------
-const long potiERROR = 40;
+const long potiERROR = 50;
