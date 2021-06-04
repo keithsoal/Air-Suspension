@@ -245,13 +245,13 @@ void loop() {
     //    }
 
     // REMOVE THIS LINE
-    cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
+    cylinder_relative_rise(TareA, TareB, TareC, middlePositionA, middlePositionB, middlePositionC, relativeABCdist);
 
     lnDSPA = analogReadA(TareA);
     lnDSPB = analogReadB(TareB);
     lnDSPC = analogReadC(TareC);
     // if system reached middle position close valves
-    if (lnDSPA >= middlePosition && lnDSPB >= middlePosition && lnDSPC >= middlePosition) {
+    if (lnDSPA >= middlePositionA && lnDSPB >= middlePositionB && lnDSPC >= middlePositionC) {
       state = 4;
       close_valves();
       digitalWrite(GreenLight, HIGH);
@@ -291,7 +291,7 @@ void loop() {
     lnDSPA = analogReadA(TareA);
     lnDSPB = analogReadB(TareB);
     lnDSPC = analogReadC(TareC);
-    if (lnDSPA < middlePosition - middlePositionRange) {
+    if (lnDSPA < middlePositionA - middlePositionRange) {
 
       // initialize delayMillis on first entry
       if (delayFlagA == 0) {
@@ -313,7 +313,7 @@ void loop() {
       delayFlagA = 0;
     }
 
-    if (lnDSPB < middlePosition - middlePositionRange) {
+    if (lnDSPB < middlePositionB - middlePositionRange) {
 
       // initialize delayMillis on first entry
       if (delayFlagB == 0) {
@@ -334,7 +334,7 @@ void loop() {
     else {
       delayFlagB = 0;
     }
-    if (lnDSPC < middlePosition - middlePositionRange) {
+    if (lnDSPC < middlePositionC - middlePositionRange) {
 
       // initialize delayMillis on first entry
       if (delayFlagC == 0) {
@@ -358,15 +358,15 @@ void loop() {
 
     // Overshoot checks every 2 seconds
 
-    if (lnDSPA > middlePosition + middlePositionRange + overShootBuffer) {
+    if (lnDSPA > middlePositionA + middlePositionRange + overShootBuffer) {
       digitalWrite(VentilA_Senken, HIGH);
       senkenFlagA = true;
     }
-    if (lnDSPB > middlePosition + middlePositionRange + overShootBuffer) {
+    if (lnDSPB > middlePositionB + middlePositionRange + overShootBuffer) {
       digitalWrite(VentilB_Senken, HIGH);
       senkenFlagB = true;
     }
-    if (lnDSPC > middlePosition + middlePositionRange + overShootBuffer) {
+    if (lnDSPC > middlePositionC + middlePositionRange + overShootBuffer) {
       digitalWrite(VentilC_Senken, HIGH);
       senkenFlagC = true;
     }
@@ -375,7 +375,7 @@ void loop() {
   // cylinder A
   if (state == 4 && senkenFlagA == true) {
     lnDSPA = analogReadA(TareA);
-    if (lnDSPA < middlePosition + middlePositionRange) {
+    if (lnDSPA < middlePositionA + middlePositionRange) {
       digitalWrite(VentilA_Senken, LOW);
       senkenFlagA = false;
     }
@@ -383,7 +383,7 @@ void loop() {
   // cylinder B
   if (state == 4 && senkenFlagB == true) {
     lnDSPB = analogReadB(TareB);
-    if (lnDSPB < middlePosition + middlePositionRange) {
+    if (lnDSPB < middlePositionB + middlePositionRange) {
       digitalWrite(VentilB_Senken, LOW);
       senkenFlagB = false;
     }
@@ -391,7 +391,7 @@ void loop() {
   // cylinder C
   if (state == 4 && senkenFlagC == true) {
     lnDSPC = analogReadC(TareC);
-    if (lnDSPC < middlePosition + middlePositionRange) {
+    if (lnDSPC < middlePositionC + middlePositionRange) {
       digitalWrite(VentilC_Senken, LOW);
       senkenFlagC = false;
     }
@@ -830,27 +830,27 @@ bool check_tankC_condition(int TareC, int LiftOff) {
   return TankC;
 }
 
-void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePosition, int relativeABCdist) {
+void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePositionA, int middlePositionB, int middlePositionC, int relativeABCdist) {
   // check that level relative to other displacement sensors does not exceed threshold
   lnDSPA = analogReadA(TareA);
   lnDSPB = analogReadB(TareB);
   lnDSPC = analogReadC(TareC);
   // cylinder A
-  if (lnDSPA < middlePosition && lnDSPA <= (lnDSPB + relativeABCdist) && lnDSPA <= (lnDSPC + relativeABCdist)) {
+  if (lnDSPA < middlePositionA && lnDSPA <= (lnDSPB + relativeABCdist) && lnDSPA <= (lnDSPC + relativeABCdist)) {
     digitalWrite(VentilA_Heben, HIGH);
   }
   else {
     digitalWrite(VentilA_Heben, LOW);
   }
   // cylinder B
-  if (lnDSPB < middlePosition && lnDSPB <= (lnDSPC + relativeABCdist) && lnDSPB <= (lnDSPA + relativeABCdist)) {
+  if (lnDSPB < middlePositionB && lnDSPB <= (lnDSPC + relativeABCdist) && lnDSPB <= (lnDSPA + relativeABCdist)) {
     digitalWrite(VentilB_Heben, HIGH);
   }
   else {
     digitalWrite(VentilB_Heben, LOW);
   }
   // cylinder C
-  if (lnDSPC < middlePosition && lnDSPC <= (lnDSPA + relativeABCdist) && lnDSPC <= (lnDSPB + relativeABCdist)) {
+  if (lnDSPC < middlePositionC && lnDSPC <= (lnDSPA + relativeABCdist) && lnDSPC <= (lnDSPB + relativeABCdist)) {
     digitalWrite(VentilC_Heben, HIGH);
   }
   else {
