@@ -51,9 +51,6 @@ int lnDSPC = 0;
 
 // Other ----------------------------------------------------------
 int state = 0;
-bool senkenFlagA = false;
-bool senkenFlagB = false;
-bool senkenFlagC = false;
 
 // Pressure vessels state
 bool TankA = false;
@@ -84,6 +81,14 @@ unsigned long delayMillisB = 0;
 int delayFlagB = 0;
 unsigned long delayMillisC = 0;
 int delayFlagC = 0;
+
+// Senken flag
+bool senkenFlagA = false;
+bool senkenFlagB = false;
+bool senkenFlagC = false;
+unsigned long senkenMillisA = 0;
+unsigned long senkenMillisB = 0;
+unsigned long senkenMillisC = 0;
 
 // Cylinder Rise Delay
 int cylinderRiseFlag = 0;
@@ -356,20 +361,92 @@ void loop() {
       delayFlagC = 0;
     }
 
+    // Senken -----------------------------------------------------------------------------------------
     // Overshoot checks every 2 seconds
 
     if (lnDSPA > middlePosition + middlePositionRange + overShootBuffer) {
-      digitalWrite(VentilA_Senken, HIGH);
-      senkenFlagA = true;
+      //digitalWrite(VentilA_Senken, HIGH);
+      //senkenFlagA = true;
+
+      // initialize delayMillis on first entry
+      if (senkenFlagA == false) {
+        senkenMillisA = millis();
+        // set delay flag 1 start delay timer
+        senkenFlagA = true;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - senkenMillisA > DELAYSenken) {
+        digitalWrite(VentilA_Senken, HIGH);
+        senkenFlagA = false;
+      }
+      
     }
+    else {
+      senkenFlagA = false;
+      digitalWrite(VentilA_Senken, LOW);
+    }
+
+    
+    //if (lnDSPB > middlePosition + middlePositionRange + overShootBuffer) {
+      //digitalWrite(VentilB_Senken, HIGH);
+      //senkenFlagB = true;
+    //}
     if (lnDSPB > middlePosition + middlePositionRange + overShootBuffer) {
-      digitalWrite(VentilB_Senken, HIGH);
-      senkenFlagB = true;
+
+      // initialize delayMillis on first entry
+      if (senkenFlagB == false) {
+        senkenMillisB = millis();
+        // set delay flag 1 start delay timer
+        senkenFlagB = true;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - senkenMillisB > DELAYSenken) {
+        digitalWrite(VentilB_Senken, HIGH);
+        senkenFlagB = false;
+      }
+      
     }
+    else {
+      senkenFlagB = false;
+      digitalWrite(VentilB_Senken, LOW);
+    }
+
+    
+    //if (lnDSPC > middlePosition + middlePositionRange + overShootBuffer) {
+      //digitalWrite(VentilC_Senken, HIGH);
+      //senkenFlagC = true;
+    //}
     if (lnDSPC > middlePosition + middlePositionRange + overShootBuffer) {
-      digitalWrite(VentilC_Senken, HIGH);
-      senkenFlagC = true;
+
+      // initialize delayMillis on first entry
+      if (senkenFlagC == false) {
+        senkenMillisC = millis();
+        // set delay flag 1 start delay timer
+        senkenFlagC = true;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - senkenMillisC > DELAYSenken) {
+        digitalWrite(VentilC_Senken, HIGH);
+        senkenFlagC = false;
+      }
+      
     }
+    else {
+      senkenFlagC = false;
+      digitalWrite(VentilC_Senken, LOW);
+    }
+
+
+    
   }
 
   // cylinder A
@@ -548,37 +625,37 @@ void loop() {
     // Poti failure ----------------------------------------------
 
 
-    if (state == 3 || state == 4) {
-
-
-      TTA = analogRead(TravelSensorA);
-      TTB = analogRead(TravelSensorB);
-      TTC = analogRead(TravelSensorC);
-
-    //Serial.print("TTAA: "); Serial.println(TTA);
-    //Serial.print("TTB: "); Serial.println(TTB);
-    //Serial.print("TTC: "); Serial.println(TTC);
-
-      if (TTA == 0 || TTB == 0 || TTC == 0) {
-        // initialize delayMillis on first entry
-        if (delayFlagP == 0) {
-          delayMillisP = millis();
-          // set delay flag 1 start delay timer
-          delayFlagP = 1;
-          delay(100);
-        }
-        // if delay timer exceeds 5 seconds change state
-        unsigned long currentMillis = millis();
-        if (currentMillis - delayMillisP > DELAYPOTI) {
-          state = 6;
-          BUZZ = true;
-        }
-        // else keep counting
-      }
-      else {
-        delayFlagP = 0;
-      }
-    }
+//    if (state == 3 || state == 4) {
+//
+//
+//      TTA = analogRead(TravelSensorA);
+//      TTB = analogRead(TravelSensorB);
+//      TTC = analogRead(TravelSensorC);
+//
+//    //Serial.print("TTAA: "); Serial.println(TTA);
+//    //Serial.print("TTB: "); Serial.println(TTB);
+//    //Serial.print("TTC: "); Serial.println(TTC);
+//
+//      if (TTA == 0 || TTB == 0 || TTC == 0) {
+//        // initialize delayMillis on first entry
+//        if (delayFlagP == 0) {
+//          delayMillisP = millis();
+//          // set delay flag 1 start delay timer
+//          delayFlagP = 1;
+//          delay(100);
+//        }
+//        // if delay timer exceeds 5 seconds change state
+//        unsigned long currentMillis = millis();
+//        if (currentMillis - delayMillisP > DELAYPOTI) {
+//          state = 6;
+//          BUZZ = true;
+//        }
+//        // else keep counting
+//      }
+//      else {
+//        delayFlagP = 0;
+//      }
+//    }
 
 
 
@@ -609,14 +686,14 @@ void loop() {
 
   // Buzzer ----------------------------------------------------
 
-  if (BUZZ == true) {
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillisBuzz >= interval) {
-      // save the last time you blinked the LED
-      previousMillisBuzz = currentMillis;
-      BuzzFlag = myTone(CONTROLLINO_D0, BuzzFlag);
-    }
-  }
+//  if (BUZZ == true) {
+//    unsigned long currentMillis = millis();
+//    if (currentMillis - previousMillisBuzz >= interval) {
+//      // save the last time you blinked the LED
+//      previousMillisBuzz = currentMillis;
+//      BuzzFlag = myTone(CONTROLLINO_D0, BuzzFlag);
+//    }
+//  }
 
   // Orange Light ----------------------------------------------
 
