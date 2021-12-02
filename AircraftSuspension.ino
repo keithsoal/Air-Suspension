@@ -51,9 +51,6 @@ int lnDSPC = 0;
 
 // Other ----------------------------------------------------------
 int state = 0;
-bool senkenFlagA = false;
-bool senkenFlagB = false;
-bool senkenFlagC = false;
 
 // Pressure vessels state
 bool TankA = false;
@@ -84,6 +81,14 @@ unsigned long delayMillisB = 0;
 int delayFlagB = 0;
 unsigned long delayMillisC = 0;
 int delayFlagC = 0;
+
+// Senken flag
+bool senkenFlagA = false;
+bool senkenFlagB = false;
+bool senkenFlagC = false;
+unsigned long senkenMillisA = 0;
+unsigned long senkenMillisB = 0;
+unsigned long senkenMillisC = 0;
 
 // Cylinder Rise Delay
 int cylinderRiseFlag = 0;
@@ -245,13 +250,13 @@ void loop() {
     //    }
 
     // REMOVE THIS LINE
-    cylinder_relative_rise(TareA, TareB, TareC, middlePositionA, middlePositionB, middlePositionC, relativeABCdist);
+    cylinder_relative_rise(TareA, TareB, TareC, middlePosition, relativeABCdist);
 
     lnDSPA = analogReadA(TareA);
     lnDSPB = analogReadB(TareB);
     lnDSPC = analogReadC(TareC);
     // if system reached middle position close valves
-    if (lnDSPA >= middlePositionA && lnDSPB >= middlePositionB && lnDSPC >= middlePositionC) {
+    if (lnDSPA >= middlePosition && lnDSPB >= middlePosition && lnDSPC >= middlePosition) {
       state = 4;
       close_valves();
       digitalWrite(GreenLight, HIGH);
@@ -291,7 +296,7 @@ void loop() {
     lnDSPA = analogReadA(TareA);
     lnDSPB = analogReadB(TareB);
     lnDSPC = analogReadC(TareC);
-    if (lnDSPA < middlePositionA - middlePositionRange) {
+    if (lnDSPA < middlePosition - middlePositionRange) {
 
       // initialize delayMillis on first entry
       if (delayFlagA == 0) {
@@ -313,7 +318,7 @@ void loop() {
       delayFlagA = 0;
     }
 
-    if (lnDSPB < middlePositionB - middlePositionRange) {
+    if (lnDSPB < middlePosition - middlePositionRange) {
 
       // initialize delayMillis on first entry
       if (delayFlagB == 0) {
@@ -334,7 +339,7 @@ void loop() {
     else {
       delayFlagB = 0;
     }
-    if (lnDSPC < middlePositionC - middlePositionRange) {
+    if (lnDSPC < middlePosition - middlePositionRange) {
 
       // initialize delayMillis on first entry
       if (delayFlagC == 0) {
@@ -356,26 +361,98 @@ void loop() {
       delayFlagC = 0;
     }
 
+    // Senken -----------------------------------------------------------------------------------------
     // Overshoot checks every 2 seconds
 
-    if (lnDSPA > middlePositionA + middlePositionRange + overShootBuffer) {
-      digitalWrite(VentilA_Senken, HIGH);
-      senkenFlagA = true;
+    if (lnDSPA > middlePosition + middlePositionRange + overShootBuffer) {
+      //digitalWrite(VentilA_Senken, HIGH);
+      //senkenFlagA = true;
+
+      // initialize delayMillis on first entry
+      if (senkenFlagA == false) {
+        senkenMillisA = millis();
+        // set delay flag 1 start delay timer
+        senkenFlagA = true;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - senkenMillisA > DELAYSenken) {
+        digitalWrite(VentilA_Senken, HIGH);
+        senkenFlagA = false;
+      }
+      
     }
-    if (lnDSPB > middlePositionB + middlePositionRange + overShootBuffer) {
-      digitalWrite(VentilB_Senken, HIGH);
-      senkenFlagB = true;
+    else {
+      senkenFlagA = false;
+      digitalWrite(VentilA_Senken, LOW);
     }
-    if (lnDSPC > middlePositionC + middlePositionRange + overShootBuffer) {
-      digitalWrite(VentilC_Senken, HIGH);
-      senkenFlagC = true;
+
+    
+    //if (lnDSPB > middlePosition + middlePositionRange + overShootBuffer) {
+      //digitalWrite(VentilB_Senken, HIGH);
+      //senkenFlagB = true;
+    //}
+    if (lnDSPB > middlePosition + middlePositionRange + overShootBuffer) {
+
+      // initialize delayMillis on first entry
+      if (senkenFlagB == false) {
+        senkenMillisB = millis();
+        // set delay flag 1 start delay timer
+        senkenFlagB = true;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - senkenMillisB > DELAYSenken) {
+        digitalWrite(VentilB_Senken, HIGH);
+        senkenFlagB = false;
+      }
+      
     }
+    else {
+      senkenFlagB = false;
+      digitalWrite(VentilB_Senken, LOW);
+    }
+
+    
+    //if (lnDSPC > middlePosition + middlePositionRange + overShootBuffer) {
+      //digitalWrite(VentilC_Senken, HIGH);
+      //senkenFlagC = true;
+    //}
+    if (lnDSPC > middlePosition + middlePositionRange + overShootBuffer) {
+
+      // initialize delayMillis on first entry
+      if (senkenFlagC == false) {
+        senkenMillisC = millis();
+        // set delay flag 1 start delay timer
+        senkenFlagC = true;
+        delay(100);
+      }
+
+      // if delay timer exceeds 5 seconds change state
+      unsigned long currentMillis = millis();
+      if (currentMillis - senkenMillisC > DELAYSenken) {
+        digitalWrite(VentilC_Senken, HIGH);
+        senkenFlagC = false;
+      }
+      
+    }
+    else {
+      senkenFlagC = false;
+      digitalWrite(VentilC_Senken, LOW);
+    }
+
+
+    
   }
 
   // cylinder A
   if (state == 4 && senkenFlagA == true) {
     lnDSPA = analogReadA(TareA);
-    if (lnDSPA < middlePositionA + middlePositionRange) {
+    if (lnDSPA < middlePosition + middlePositionRange) {
       digitalWrite(VentilA_Senken, LOW);
       senkenFlagA = false;
     }
@@ -383,7 +460,7 @@ void loop() {
   // cylinder B
   if (state == 4 && senkenFlagB == true) {
     lnDSPB = analogReadB(TareB);
-    if (lnDSPB < middlePositionB + middlePositionRange) {
+    if (lnDSPB < middlePosition + middlePositionRange) {
       digitalWrite(VentilB_Senken, LOW);
       senkenFlagB = false;
     }
@@ -391,7 +468,7 @@ void loop() {
   // cylinder C
   if (state == 4 && senkenFlagC == true) {
     lnDSPC = analogReadC(TareC);
-    if (lnDSPC < middlePositionC + middlePositionRange) {
+    if (lnDSPC < middlePosition + middlePositionRange) {
       digitalWrite(VentilC_Senken, LOW);
       senkenFlagC = false;
     }
@@ -548,37 +625,37 @@ void loop() {
     // Poti failure ----------------------------------------------
 
 
-    if (state == 3 || state == 4) {
-
-
-      TTA = analogRead(TravelSensorA);
-      TTB = analogRead(TravelSensorB);
-      TTC = analogRead(TravelSensorC);
-
-    //Serial.print("TTAA: "); Serial.println(TTA);
-    //Serial.print("TTB: "); Serial.println(TTB);
-    //Serial.print("TTC: "); Serial.println(TTC);
-
-      if (TTA == 0 || TTB == 0 || TTC == 0) {
-        // initialize delayMillis on first entry
-        if (delayFlagP == 0) {
-          delayMillisP = millis();
-          // set delay flag 1 start delay timer
-          delayFlagP = 1;
-          delay(100);
-        }
-        // if delay timer exceeds 5 seconds change state
-        unsigned long currentMillis = millis();
-        if (currentMillis - delayMillisP > DELAYPOTI) {
-          state = 6;
-          BUZZ = true;
-        }
-        // else keep counting
-      }
-      else {
-        delayFlagP = 0;
-      }
-    }
+//    if (state == 3 || state == 4) {
+//
+//
+//      TTA = analogRead(TravelSensorA);
+//      TTB = analogRead(TravelSensorB);
+//      TTC = analogRead(TravelSensorC);
+//
+//    //Serial.print("TTAA: "); Serial.println(TTA);
+//    //Serial.print("TTB: "); Serial.println(TTB);
+//    //Serial.print("TTC: "); Serial.println(TTC);
+//
+//      if (TTA == 0 || TTB == 0 || TTC == 0) {
+//        // initialize delayMillis on first entry
+//        if (delayFlagP == 0) {
+//          delayMillisP = millis();
+//          // set delay flag 1 start delay timer
+//          delayFlagP = 1;
+//          delay(100);
+//        }
+//        // if delay timer exceeds 5 seconds change state
+//        unsigned long currentMillis = millis();
+//        if (currentMillis - delayMillisP > DELAYPOTI) {
+//          state = 6;
+//          BUZZ = true;
+//        }
+//        // else keep counting
+//      }
+//      else {
+//        delayFlagP = 0;
+//      }
+//    }
 
 
 
@@ -609,14 +686,14 @@ void loop() {
 
   // Buzzer ----------------------------------------------------
 
-  if (BUZZ == true) {
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillisBuzz >= interval) {
-      // save the last time you blinked the LED
-      previousMillisBuzz = currentMillis;
-      BuzzFlag = myTone(CONTROLLINO_D0, BuzzFlag);
-    }
-  }
+//  if (BUZZ == true) {
+//    unsigned long currentMillis = millis();
+//    if (currentMillis - previousMillisBuzz >= interval) {
+//      // save the last time you blinked the LED
+//      previousMillisBuzz = currentMillis;
+//      BuzzFlag = myTone(CONTROLLINO_D0, BuzzFlag);
+//    }
+//  }
 
   // Orange Light ----------------------------------------------
 
@@ -830,27 +907,27 @@ bool check_tankC_condition(int TareC, int LiftOff) {
   return TankC;
 }
 
-void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePositionA, int middlePositionB, int middlePositionC, int relativeABCdist) {
+void cylinder_relative_rise(int TareA, int TareB, int TareC, int middlePosition, int relativeABCdist) {
   // check that level relative to other displacement sensors does not exceed threshold
   lnDSPA = analogReadA(TareA);
   lnDSPB = analogReadB(TareB);
   lnDSPC = analogReadC(TareC);
   // cylinder A
-  if (lnDSPA < middlePositionA && lnDSPA <= (lnDSPB + relativeABCdist) && lnDSPA <= (lnDSPC + relativeABCdist)) {
+  if (lnDSPA < middlePosition && lnDSPA <= (lnDSPB + relativeABCdist) && lnDSPA <= (lnDSPC + relativeABCdist)) {
     digitalWrite(VentilA_Heben, HIGH);
   }
   else {
     digitalWrite(VentilA_Heben, LOW);
   }
   // cylinder B
-  if (lnDSPB < middlePositionB && lnDSPB <= (lnDSPC + relativeABCdist) && lnDSPB <= (lnDSPA + relativeABCdist)) {
+  if (lnDSPB < middlePosition && lnDSPB <= (lnDSPC + relativeABCdist) && lnDSPB <= (lnDSPA + relativeABCdist)) {
     digitalWrite(VentilB_Heben, HIGH);
   }
   else {
     digitalWrite(VentilB_Heben, LOW);
   }
   // cylinder C
-  if (lnDSPC < middlePositionC && lnDSPC <= (lnDSPA + relativeABCdist) && lnDSPC <= (lnDSPB + relativeABCdist)) {
+  if (lnDSPC < middlePosition && lnDSPC <= (lnDSPA + relativeABCdist) && lnDSPC <= (lnDSPB + relativeABCdist)) {
     digitalWrite(VentilC_Heben, HIGH);
   }
   else {
